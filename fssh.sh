@@ -3,7 +3,9 @@
 # pflint Mon 05 Nov 2012 09:14:14 AM EST Added standard functions
 # pflint Tue 27 Nov 2012 08:35:47 AM EST Added security variables\]
 # pflint Mon 15 Apr 2013 09:00:27 AM EDT check for passwords
-version="1.0"
+# cpyarger Tue 17 Sep 2013 08:12:25 PM EDT Initial work on fast-ssh
+VERSION="1.0"
+pName="fssh.sh"
 #
 # hold environment
 export S=$PWD
@@ -26,25 +28,20 @@ cat $0 | grep '^## ' | sed -e 's/##//'
 # echo "This is the help function"
 ##                       *****DOCUMENTATION*****
 ## You get this documentation when you put in the wrong number of arguments...
-## The name of this program is template.sh, a collection of general purpose tools.
-## for managing printing at the VDOL.  This is released under GPL I
+## The name of this program is fssh.sh, This is a tool for saving frequently used SSH connections 
+## This is released under GPL v3
 ## The syntax is:
-##  - template.sh dummy tests the dummy function
+##  - fssh.sh dummy tests the dummy function
 ##    Output is delivered to the screen...
-##  - template.sh pause <message> displays message and with enter exits normally
-##  - template.sh wait <n> <filename> where "n" is
-##  - template.sh get <n> <message> where "n" is wait time,displays message
-##    and exits normally
-##  - template.sh get <n> <filename> where "n" is
-##  - template.sh get all <n> where "n" is typically
-##    Output is delivered to the directory you are in...
-## For structure information type "grep '^\#\*' template.sh"
+##  - fssh.sh pause <message> displays message and with enter exits normally
+##  - fssh.sh wait <n> <filename> where "n" is
+## For structure information type "grep '^\#\*' fssh.sh"
 ##    :^)
-## (C) P Flint, Vermont Department of Labor Liscensed under GPLI
+## (C) CPYarger, CPYarger IT Services Liscensed under GPLv3
 ##
 #          *****Documentation Loop ends here the rest is function******
 #
-} # Test: template.sh
+} # Test: fssh.sh
 #
 #
 #* function dummy - Dummy basic function template. ajm1Rename and fill stuff in between braces
@@ -55,36 +52,6 @@ echo "This is the dummy function"
 #*######################################STANDARD AND MAYBE USEFUL FUNCTIONS BELOW
 #
 #
-#* function dir - this directory function is very specific as to what directory and what target
-function dir(){
-#debug echo $#"     "$var1"    "$var2"    "$var3"    "$var4"    "$ARGS
-targ2=$(echo $var2 | tr '[:lower:]' '[:upper:]')
-# echo $var2"   "$targ2
-targ3=$(echo $var3 | tr '[:lower:]' '[:upper:]')
-# echo $var3"   "$targ3
-if [ "$var4" = "now"  ]; then cdate=$(echo $(date +%b\ %d)); else cdate=$(echo $var4 | tr '[:lower:]' '[:upper:]'); fi
-echo $var4"   "$cdate
-echo -n "This dir function is specific to the directory that "$targ2" files  in "
-echo "LECS2:ADP/VSELIB/USRLIB2/AFP22/ filtered for "$targ2
-case "$ARGS" in
-   "4") echo "...additionally filtered for "$targ3" dated "$cdate; curl ftp://$uid:$passwd@159.105.80.205/ADP/VSELIB/USRLIB2/AFP22/ 2>/dev/null   | grep -i $var2 | grep -i $var3 | grep -i "$cdate" | cut -c 26- ;;
-   "3") echo "...additionally filtered for "$targ3 ; curl ftp://$uid:$passwd@159.105.80.205/ADP/VSELIB/USRLIB2/AFP22/ 2>/dev/null   | grep -i $var2 | grep -i $var3 | grep -i "$cdate" | cut -c 26- ;;
-   "2") echo "...and additionally filtered for "$var3; curl ftp://$uid:$passwd@159.105.80.205/ADP/VSELIB/USRLIB2/AFP22/ 2>/dev/null   | grep -i $targ2 | grep -i $var2 | cut -c 26- ;;
-   "1") curl ftp://$uid:$passwd@159.105.80.205/ADP/VSELIB/USRLIB2/AFP22/ 2>/dev/null   | grep -i $targ2 | cut -c 26-;;
-esac # end of choices
-echo "finished"
-} # Test: template.sh dir
-#
-#
-# copy files to mainframe
-#* function rename- Renames the PHASE file PHAOK or optionally the file name of your choice
-function rename(){
-echo "renaming "$oldname" to "$newname
-pause "Are you ready?"
-/usr/bin/curl -I "ftp://$uid:$passwd@159.105.80.205/ADP/VSELIB/USRLIB2/AFP22/" -Q "-RNFR $curname" -Q "-RNTO $newname" # rename from PHASE to PHAOK
-} # Test:
-#
-#* function spause- A simple tarry...
 function spause(){
    # -t sets time
    # read -t $pt -p "$*" ans
@@ -105,73 +72,8 @@ case "$ARGS" in
    "1") read;;
 esac # end of choices
    # echo $ans
-} # TESTS: template.sh pause; template.sh pause "Testing wait"; template.sh pause 3 "Testing 1,2,3";/manage_main
+} # TESTS: $pName pause; $pName pause "Testing wait"; $pName pause 3 "Testing 1,2,3";/manage_main
 #
-#
-#* function listful-This function checks to make certian you have appropriate files
-function listful(){
-# echo "This is the listful function"
-#debug echo $#"     "$1"    "$ARGS
-if [ ! -e "$list" ] ; then
-    clear
-    echo "The path to ICCFLIST.TXT must be right for $0 to work..."
-    echo ""${var2:0:$((${#var2}-3))}
-    echo "Sadly, the file "$list" does not exist"
-    read -p "Please change the current path \($list\): " -e list
-    # echo "test it again"
-    # ARGS="5"
-    listful
-else
-    echo ""
-fi # listful
-} # Test: $0 listfull
-#
-#* function get  -  This downloads single ICCF files from specific libraries
-function get()
-{
-echo "The file we are downloading from " $LIB" is: "$FILE
-curl -s ftp://$uid:$passwd@159.105.80.225//ADP/DWN/ICCF/$LIB/$FILE -o $FILE".iccf."$LIB".txt"
-# echo " is downloaded" |tee --append ../../sendjcl.log
-ls -alt | grep $FILE | cut -c
-26- #>> ../../sendjcl.log
-} # end of get function
-#
-#* function cleanup-Cleanup function deletes all temporary files
-function cleanup(){
-echo "This is the cleanup function"
-# Clean up stuff used in this function
-# Remove buffers
-rm iccf.first.half iccf.second.half iccflist$LIBR.txt $LIBR.iccf.column 2>/dev/null
-# rm $1 # removes the target file...
-# mv $1 ../../$1 # instead, moves the target file to ../../$1
-# mv $1 ../../$1"_"$(date +%Y-%m-%d) # most severe, moves the target file to ../../$1
-} # Test:
-#
-#* function camd  - Check and manuipulate days
-function camd()
-{
-# if [ $($1 +%u) -ne "1" ]; then
-# echo $(date --date=$1 +%u)
-if [ $(date --date=$DATE +%u) -eq "1" ]; then
-        echo "I suppose it is Monday";
-        bin/2stap.sh $DATE                  # do today, Monday
-        DATE=$(date --date=$DATE"-3day" +%m/%d/%Y ) # do Friday
-    else
-        echo "it is not Monday";
-    fi # test for Mondayness...
-} # end of cass- monday-monday
-#
-#* function fwatch - Watches the end of a file indefinitely
-function fwatch(){
-echo $#"     "$var2"    "$ARGS
- watch tail -20 $var2
-} # Test: template.sh fwatch  var/log/messages
-#
-#* This downloads single files as in the listing
-function get(){
-echo "The file we are downloading from " $LIB" is: "$FILE
-curl -s ftp://$uid:$passwd@159.105.80.225//ADP/DWN/ICCF/$LIB/$FILE -o $FILE".iccf."$LIB".txt"
-} # Test: template.sh get
 #
 #* function cleanup - cleanup function deletes all temporary files
 function cleanup(){
@@ -180,14 +82,14 @@ echo $#"        "$ARGS
 #* Clean up stuff used in this function
 #* Remove buffers
 rm iccf.first.half iccf.second.half iccflist$LIBR.txt $LIBR.iccf.column 2>/dev/null
-# rm $1 # removes the bin/template.sh wait "..go on" 5target file...
+# rm $1 # removes the bin/$pName wait "..go on" 5target file...
 # mv $1 ../../$1 # instead, moves the target file to ../../$1
 # mv $1 ../../$1"_"$(date +%Y-%m-%d) # most severe, moves the target file to ../../$1
 } # Test:
 #
 #*###################################### MAIN ENTRY POINT AND COMPOUND CASE
 #
-echo "template.sh v 0.2 starts"
+echo "$pName  v $VERSION starts"
 #* Evaluator Routine
 # Note the evaluator allows for many cases and error checking...
 # ARGS=$#         # carries the number of args into the functions...
@@ -225,7 +127,7 @@ case "$ARGS" in
 esac # End main loop. To TEST:
 #
 # echo " ";
-echo "template.sh stops"
+echo "$pName stops"
 #  That's all folks!!
 # Junk shop
 #     if [ "$#" -eq "3" ] && [ "$1" = "get" ] && [ "$2" = "all"  ];  then ARGS="7"; fi
