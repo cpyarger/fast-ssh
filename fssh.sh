@@ -4,7 +4,7 @@
 # pflint Tue 27 Nov 2012 08:35:47 AM EST Added security variables\]
 # pflint Mon 15 Apr 2013 09:00:27 AM EDT check for passwords
 # cpyarger Tue 17 Sep 2013 08:12:25 PM EDT Initial work on fast-ssh
-VERSION="1.0"
+VERSION="1.0.1"
 pName="fssh.sh"
 rfile=~/.fssh/fssh.list
 #
