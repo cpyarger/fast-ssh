@@ -24,9 +24,9 @@ touch $rfile
 #
 #* function help  - Help function for template basic help goes here
 function help(){
-clear;
-echo "This is "$0"  "$version
-cat $0 | grep '^## ' | sed -e 's/##//'
+	clear;
+	echo "This is "$0"  "$version
+	cat $0 | grep '^## ' | sed -e 's/##//'
 # echo "This is the help function"
 ##                       *****DOCUMENTATION*****
 ## You get this documentation when you put in the wrong number of arguments...
@@ -52,7 +52,7 @@ cat $0 | grep '^## ' | sed -e 's/##//'
 #
 #* function dummy - Dummy basic function template. ajm1Rename and fill stuff in between braces
 function dummy(){
-echo "This is the dummy function"
+	echo "This is the dummy function"
 } # Test:
 #
 #*######################################STANDARD AND MAYBE USEFUL FUNCTIONS BELOW
@@ -61,37 +61,33 @@ echo "This is the dummy function"
 #* Read Array Function - Reads the array from $rfile
 function readArray (){ 
 i=0
-while read line; do
-	name[i]="$(echo $line | cut -d'=' -f 1)" 
-	value[i]="$(echo $line | cut -d'=' -f 2-)"
-        ((i++))
-done < $rfile
+	while read line; do
+		name[i]="$(echo $line | cut -d'=' -f 1)" 
+		value[i]="$(echo $line | cut -d'=' -f 2-)"
+        	((i++))
+	done < $rfile
 }
 #
 #
 #* Parse Array Function - Parses the Array and returns connection value and name variables
 function parseArray() {
-readArray
-iline=$(grep -nsi $var2 $rfile|cut -d: -f1)
-((iline--))
-
-rval="${value[iline]}"
-nval="${name[iline]}"
+	readArray
+	iline=$(grep -nsi $var2 $rfile|cut -d: -f1)
+	((iline--))
+	rval="${value[iline]}"
+	nval="${name[iline]}"
 }
 #
 #
 #* Connect Function - initiates SSH command
 function connect () {
-parseArray
-
-#echo $iline
-#echo $rval
-#echo $nval
-
-clear
-echo "Connecting to $nval... "
-ssh $rval
-
+	parseArray
+	#echo $iline
+	#echo $rval
+	#echo $nval
+	clear
+	echo "Connecting to $nval... "
+	ssh $rval
 }
 #
 #
@@ -99,58 +95,56 @@ ssh $rval
 function createKey () {
 parseArray
 # Check for File
-if [ -e ~/.ssh/id_rsa.pub ]
-then
-echo " Found ~/.ssh/id_rsa.pub"
-else
-read -p "Do you want to enable key based logins? Y/n: "
-[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && read -p "Enable password free logins? Y/n: "
-[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && ssh-keygen -N '' || [[ $REPLY = [nN] ]] &&  ssh-keygen
-fi
+	if [ -e ~/.ssh/id_rsa.pub ];then
+		echo " Found ~/.ssh/id_rsa.pub"
+	else
+		read -p "Do you want to enable key based logins? Y/n: "
+		[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && read -p "Enable password free logins? Y/n: "
+		[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && ssh-keygen -N '' || [[ $REPLY = [nN] ]] &&  ssh-keygen
+	fi
 }
 #
 #
 #* Add network function - Allows you to add a network to the file $rfile
 function anet() {
-echo "Adding network to list"
-#
-# Parse for Network Name
-read -p "Network Name (ex. example): "
-netname=$REPLY
-# Parse for Network Value
-read -p "Network Value (ex. -XC example.cpyarger.com): "
-netvalue=$REPLY
-# Write to $rfile
-wvalue="$netname=$netvalue" 
-echo $wvalue >>$rfile
-list
+	echo "Adding network to list"
+	#
+	# Parse for Network Name
+	read -p "Network Name (ex. example): "
+	netname=$REPLY
+	# Parse for Network Value
+	read -p "Network Value (ex. -XC example.cpyarger.com): "
+	netvalue=$REPLY
+	# Write to $rfile
+	wvalue="$netname=$netvalue" 
+	echo $wvalue >>$rfile
+	list
 }
 #
 #
 #* Remove Network Function -Allows you to remove a network from the file $rfile 
 function rmnet () {
-readArray
-dline=$(grep -nsi $var2 $rfile|cut -d: -f1)
-if [ "$dline" != "" ]; then
-	tdline=$(sed -n "$dline"p "$rfile")
-	read -p "Are you sure you want to delete the network $tdline? Y/n: "
-	[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && { sed -i "$dline"d "$rfile" ; echo "$tdline" Deleted; } || { echo "$tdline NOT deleted"; }
+	readArray
+	dline=$(grep -nsi $var2 $rfile|cut -d: -f1)
+	if [ "$dline" != "" ]; then
+		tdline=$(sed -n "$dline"p "$rfile")
+		read -p "Are you sure you want to delete the network $tdline? Y/n: "
+		[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && { sed -i "$dline"d "$rfile" ; echo "$tdline" Deleted; } || { echo "$tdline NOT deleted"; }
 	fi
 }
-
 #
 #
 #* List Network Function - Lists networks in the file $rfile 
 function list () {
-readArray
-anum="${#name[@]}"
-j=0
-echo -e "Network name \t:\t\t  Network Value"
-echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-while [ $j -ne $anum ]; do
-echo -e "${name[j]} \t\t:\t ${value[j]} "
-((j++))
-done
+	readArray
+	anum="${#name[@]}"
+	j=0
+	echo -e "Network name \t:\t\t  Network Value"
+	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+	while [ $j -ne $anum ]; do
+		echo -e "${name[j]} \t\t:\t ${value[j]} "
+		((j++))
+	done
 }
 #
 #
