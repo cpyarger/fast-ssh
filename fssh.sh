@@ -6,6 +6,7 @@
 # cpyarger Tue 17 Sep 2013 08:12:25 PM EDT Initial work on fast-ssh
 VERSION="1.0"
 pName="fssh.sh"
+rfile=~/.fssh/fssh.list
 #
 # hold environment
 export S=$PWD
@@ -14,7 +15,8 @@ export S=$PWD
 #
 #* check location of vital files and programs, sanity check
 # ??
-#
+mkdir -v ~/.fssh 2>/dev/null
+touch $rfile
 # Define files to be used
 # uid="" ; if [ "$uid" == "" ]; then echo "Set user id!"; exit; fi
 # passwd="" ; if [ "$passwd" == "" ]; then echo "Set user passwd!"; exit; fi
@@ -31,10 +33,14 @@ cat $0 | grep '^## ' | sed -e 's/##//'
 ## The name of this program is fssh.sh, This is a tool for saving frequently used SSH connections 
 ## This is released under GPL v3
 ## The syntax is:
-##  - fssh.sh dummy tests the dummy function
-##    Output is delivered to the screen...
-##  - fssh.sh pause <message> displays message and with enter exits normally
-##  - fssh.sh wait <n> <filename> where "n" is
+##  - fssh.sh dummy                   			; tests the dummy function
+##                                    			  Output is delivered to the screen...
+##  - fssh.sh connect <Network Name>  			; Connects to <Network Name> via SSH
+##  - fssh.sh createKey               			; Allows you to create a SSH key
+##  - fssh.sh list               			; Lists networks
+##  - fssh.sh anet 				     	; Adds a network to your list
+##  - fssh.sh rmnet <Network Name>    			; Removes <Network Name> from your list
+## ''
 ## For structure information type "grep '^\#\*' fssh.sh"
 ##    :^)
 ## (C) CPYarger, CPYarger IT Services Liscensed under GPLv3
@@ -52,27 +58,100 @@ echo "This is the dummy function"
 #*######################################STANDARD AND MAYBE USEFUL FUNCTIONS BELOW
 #
 #
-function spause(){
-   # -t sets time
-   # read -t $pt -p "$*" ans
-   read -p "Hit enter to continue..." ans
-   echo $ans
+#* Read Array Function - Reads the array from $rfile
+function readArray (){ 
+i=0
+while read line; do
+	name[i]="$(echo $line | cut -d'=' -f 1)" 
+	value[i]="$(echo $line | cut -d'=' -f 2-)"
+        ((i++))
+done < $rfile
+}
+#
+#
+#* Parse Array Function - Parses the Array and returns connection value and name variables
+function parseArray() {
+readArray
+iline=$(grep -nsi $var2 $rfile|cut -d: -f1)
+((iline--))
+
+rval="${value[iline]}"
+nval="${name[iline]}"
+}
+#
+#
+#* Connect Function - initiates SSH command
+function connect () {
+parseArray
+
+#echo $iline
+#echo $rval
+#echo $nval
+
+clear
+echo "Connecting to $nval... "
+ssh $rval
 
 }
 #
-#* function pause - Allows many ways to tarry...
-function pause(){
-#debug echo "Vairables in Pause are: "
-#debug echo $#"     "$1"    "$ARGS
-   # -t sets time
-   # read -t $var3 -p "$*" ans
-case "$ARGS" in
-   "6") read -t $time -p "$prompt";;
-   "5") read -p "$prompt";;
-   "1") read;;
-esac # end of choices
-   # echo $ans
-} # TESTS: $pName pause; $pName pause "Testing wait"; $pName pause 3 "Testing 1,2,3";/manage_main
+#
+#* create key function - Checks for ssh-key and offers the choice to create one, with the option for password free logins
+function createKey () {
+parseArray
+# Check for File
+if [ -e ~/.ssh/id_rsa.pub ]
+then
+echo " Found ~/.ssh/id_rsa.pub"
+else
+read -p "Do you want to enable key based logins? Y/n: "
+[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && read -p "Enable password free logins? Y/n: "
+[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && ssh-keygen -N '' || [[ $REPLY = [nN] ]] &&  ssh-keygen
+fi
+}
+#
+#
+#* Add network function - Allows you to add a network to the file $rfile
+function anet() {
+echo "Adding network to list"
+#
+# Parse for Network Name
+read -p "Network Name (ex. example): "
+netname=$REPLY
+# Parse for Network Value
+read -p "Network Value (ex. -XC example.cpyarger.com): "
+netvalue=$REPLY
+# Write to $rfile
+wvalue="$netname=$netvalue" 
+echo $wvalue >>$rfile
+list
+}
+#
+#
+#* Remove Network Function -Allows you to remove a network from the file $rfile 
+function rmnet () {
+readArray
+dline=$(grep -nsi $var2 $rfile|cut -d: -f1)
+if [ "$dline" != "" ]; then
+	tdline=$(sed -n "$dline"p "$rfile")
+	read -p "Are you sure you want to delete the network $tdline? Y/n: "
+	[[ $REPLY = [yYnN] ]] || { echo "Invalid response."; exit 1; } && [[ $REPLY = [yY] ]] && { sed -i "$dline"d "$rfile" ; echo "$tdline" Deleted; } || { echo "$tdline NOT deleted"; }
+	fi
+}
+
+#
+#
+#* List Network Function - Lists networks in the file $rfile 
+function list () {
+readArray
+anum="${#name[@]}"
+j=0
+echo -e "Network name \t:\t\t  Network Value"
+echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+while [ $j -ne $anum ]; do
+echo -e "${name[j]} \t\t:\t ${value[j]} "
+((j++))
+done
+}
 #
 #
 #* function cleanup - cleanup function deletes all temporary files
@@ -89,37 +168,28 @@ rm iccf.first.half iccf.second.half iccflist$LIBR.txt $LIBR.iccf.column 2>/dev/n
 #
 #*###################################### MAIN ENTRY POINT AND COMPOUND CASE
 #
-echo "$pName  v $VERSION starts"
+# echo "$pName  v $VERSION starts"
 #* Evaluator Routine
 # Note the evaluator allows for many cases and error checking...
 # ARGS=$#         # carries the number of args into the functions...
-if [ "$#" -eq "1" ] && [ "$1" = "dummy"   ]; then ARGS="1"; fi
-if [ "$#" -eq "1" ] && [ "$1" = "spause"  ]; then ARGS="1"; fi
-if [ "$#" -eq "1" ] && [ "$1" = "pause"   ]; then ARGS="1"; fi
-if [ "$#" -eq "2" ] && [ "$1" = "pause"   ]; then ARGS="5"; fi
-if [ "$#" -eq "3" ] && [ "$1" = "pause"   ]; then ARGS="6"; fi
-if [ "$#" -eq "2" ] && [ "$1" = "fwatch"  ]; then ARGS="2"; fi
-if [ "$#" -eq "3" ] && [ "$1" = "get"     ]; then ARGS="6"; fi
-if [ "$#" -eq "4" ] && [ "$1" = "dir"     ]; then ARGS="4"; fi
-if [ "$#" -eq "3" ] && [ "$1" = "dir"     ]; then ARGS="3"; fi
-if [ "$#" -eq "2" ] && [ "$1" = "dir"     ]; then ARGS="2"; fi
-if [ "$#" -eq "1" ] && [ "$1" = "dir"     ]; then ARGS="1"; fi
-if [ "$#" -eq "1" ] && [ "$1" = "tlog"    ]; then ARGS="9"; fi
-if [ "$#" -eq "1" ] && [ "$1" = "cleanup" ]; then ARGS="9"; fi
-if [ "$#" -eq "1" ] && [ "$1" = "listful" ]; then ARGS="9"; fi
-if [ "$#" -eq "3" ] && [ "$1" = "wait"    ]; then ARGS="6"; fi
-if [ "$#" -eq "1" ] && [ "$1" = "help"    ]; then ARGS="9"; fi
+if [ "$#" -eq "1" ] && [ "$1" = "dummy"     ]; then ARGS="1"; fi
+if [ "$#" -eq "1" ] && [ "$1" = "list"      ]; then ARGS="1"; fi
+if [ "$#" -eq "1" ] && [ "$1" = "connect"   ]; then ARGS="2"; fi
+if [ "$#" -eq "1" ] && [ "$1" = "createKey" ]; then ARGS="1"; fi
+if [ "$#" -eq "1" ] && [ "$1" = "anet"      ]; then ARGS="1"; fi
+if [ "$#" -eq "1" ] && [ "$1" = "rmnet"     ]; then ARGS="2"; fi
+if [ "$#" -eq "1" ] && [ "$1" = "help"      ]; then ARGS="9"; fi
 # this tests the evaluator...
 #debug echo $#"     "$1"    "$2"    "$3"    "$ARGS #debug
 # typical cases, be careful to make your own...
 case "$ARGS" in
     "0") clear; cat $0 | grep '^## ' | sed -e 's/##//'; exit 1;; # got nothing, display help and go
-    "1") $1 ;;                                              	# run the command
-    "2") var2=$2;  $1 ;;                                    	# run the command with an argument
-    "3") var3=$3; var2=$2;  $1 ;;                           	# run the command with two arguments
-    "4") var4=$4; var3=$3; var2=$2;  $1 ;;                      # run the command with three arguments
-    "5") prompt=$2; $1 ;;				    	# run the command with a different argument
-    "6") time=$3; prompt=$2;  $1 ;;				# run the command with two different arguments
+    "1") $1 					;;             	# run the command
+    "2") var2=$2;  $1 				;;             	# run the command with an argument
+    "3") var3=$3; var2=$2;  $1  		;;             	# run the command with two arguments
+    "4") var4=$4; var3=$3; var2=$2;  $1 	;;              # run the command with three arguments
+    "5") prompt=$2; $1 				;;	    	# run the command with a different argument
+    "6") time=$3; prompt=$2;  $1                ;; 		# run the command with two different arguments
     "7") clear; echo $ARGS" Your function here" ;;		# Spare for capacity
     "8") clear; echo $ARGS" Your function here" ;;		# Spare for capacity
     "9") clear; echo $ARGS" Your function here" ;;		# Spare for capacity
@@ -127,7 +197,7 @@ case "$ARGS" in
 esac # End main loop. To TEST:
 #
 # echo " ";
-echo "$pName stops"
+# echo "$pName stops"
 #  That's all folks!!
 # Junk shop
 #     if [ "$#" -eq "3" ] && [ "$1" = "get" ] && [ "$2" = "all"  ];  then ARGS="7"; fi
